@@ -1,0 +1,12 @@
+{
+  "version": 2,
+  "builds": [
+    { "src": "api/*.js", "use": "@vercel/node" },
+    { "src": "public/**", "use": "@vercel/static" }
+  ],
+  "routes": [
+    { "src": "/api/athletes", "dest": "/api/athletes.js" },
+    { "src": "/api/speak",    "dest": "/api/speak.js" },
+    { "src": "/(.*)",         "dest": "/public/$1" }
+  ]
+}
