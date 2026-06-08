@@ -1,0 +1,8 @@
+{
+  "name": "world-at-their-feet",
+  "version": "1.0.0",
+  "description": "The World at Their Feet — Threadline Ventures",
+  "dependencies": {
+    "papaparse": "^5.4.1"
+  }
+}
