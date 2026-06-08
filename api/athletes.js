@@ -13,6 +13,10 @@ function resolveImage(raw) {
   } catch (e) { return null; }
 }
 
+function slugify(name) {
+  return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+}
+
 module.exports = function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
@@ -20,15 +24,14 @@ module.exports = function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   try {
-    // __dirname = /var/task/api on Vercel, so go up one level to reach /data
     const csvPath = path.join(__dirname, '..', 'data', 'athletes.csv');
     const raw = fs.readFileSync(csvPath, 'utf8').replace(/^\uFEFF/, '');
-
     const { data } = Papa.parse(raw, { header: true, skipEmptyLines: true });
 
     const athletes = data
       .filter(row => (row['Status'] || '').trim() === 'PUBLISHED')
       .map(row => ({
+        slug:               slugify((row['The Athlete Name'] || '').trim()),
         name:               (row['The Athlete Name'] || '').trim(),
         origin:             (row['origin'] || '').trim(),
         bio:                (row['Bio'] || '').trim(),

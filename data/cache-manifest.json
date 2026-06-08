@@ -1,0 +1,4 @@
+{
+  "_readme": "Auto-generated. Maps athleteSlug+voice to hash of the script text. When a hash changes, the old MP3 is deleted and re-encoded on next play.",
+  "athletes": {}
+}

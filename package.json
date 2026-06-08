@@ -1,6 +1,11 @@
 {
   "name": "world-at-their-feet",
   "version": "1.0.0",
+  "description": "The World at Their Feet — Threadline Ventures",
+  "engines": { "node": "18.x" },
+  "scripts": {
+    "check-cache": "node scripts/check-cache.js"
+  },
   "dependencies": {
     "papaparse": "^5.4.1"
   }

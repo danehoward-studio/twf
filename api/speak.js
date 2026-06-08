@@ -1,40 +1,81 @@
 // api/speak.js
-// Proxies ElevenLabs TTS — API key lives in Vercel Environment Variables only.
-// The key never reaches the browser.
+// First call: generates audio via ElevenLabs, saves MP3 to public/audio/, updates manifest
+// Subsequent calls: serves cached MP3 directly — zero ElevenLabs API calls
+//
+// Cache key: public/audio/{athleteSlug}-{narrator|photographer}.mp3
+
+const fs     = require('fs');
+const path   = require('path');
+const crypto = require('crypto');
 
 // ============================================================
-//  ✦  VOICE MAP — edit these if you add or change voices
-//     Key = pill label shown in the UI
-//     Value = ElevenLabs Voice ID
+//  ✦  VOICE MAP — edit voice IDs here
 // ============================================================
 const VOICE_MAP = {
   'Narrator':     'Dslrhjl3ZpzrctukrQSN',
   'Photographer': 'N0Ci88MmvOBNWazIX9VN',
-  // 'Miles':     'VOICE_ID_HERE',
-  // 'Julian':    'VOICE_ID_HERE',
-  // 'Max':       'VOICE_ID_HERE',
 };
 
 const ELEVENLABS_MODEL = 'eleven_multilingual_v2';
+
+function hash(text) {
+  return crypto.createHash('md5').update(text || '').digest('hex').slice(0, 8);
+}
+
+function slugify(name) {
+  return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+}
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { voiceLabel, text } = req.body || {};
+  const { voiceLabel, text, athleteName } = req.body || {};
 
-  if (!voiceLabel || !text) {
-    return res.status(400).json({ error: 'Missing voiceLabel or text' });
+  if (!voiceLabel || !text || !text.trim() || !athleteName) {
+    return res.status(400).json({ error: 'Missing voiceLabel, text, or athleteName' });
   }
 
-  // ✦ Set ELEVENLABS_API_KEY in Vercel → Settings → Environment Variables
-  const apiKey = process.env.ELEVENLABS_API_KEY;
+  const slug      = slugify(athleteName);
+  const voiceKey  = voiceLabel.toLowerCase(); // 'narrator' or 'photographer'
+  const cacheKey  = `${slug}-${voiceKey}`;
+  const audioDir  = path.join(__dirname, '..', 'public', 'audio');
+  const mp3Path   = path.join(audioDir, `${cacheKey}.mp3`);
+  const manifestPath = path.join(__dirname, '..', 'data', 'cache-manifest.json');
+
+  // Ensure audio dir exists
+  if (!fs.existsSync(audioDir)) fs.mkdirSync(audioDir, { recursive: true });
+
+  // Load manifest
+  let manifest = { athletes: {} };
+  try {
+    manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+    if (!manifest.athletes) manifest.athletes = {};
+  } catch (e) { /* first run, manifest doesn't exist yet */ }
+
+  const currentHash = hash(text);
+  const cached = manifest.athletes[cacheKey];
+  const mp3Exists = fs.existsSync(mp3Path);
+
+  // ── SERVE CACHED MP3 if hash matches and file exists ──
+  if (cached && cached.hash === currentHash && mp3Exists) {
+    console.log(`[speak] cache hit: ${cacheKey}`);
+    const audioBuffer = fs.readFileSync(mp3Path);
+    res.setHeader('Content-Type', 'audio/mpeg');
+    res.setHeader('Cache-Control', 'public, max-age=31536000');
+    res.setHeader('X-Cache', 'HIT');
+    return res.status(200).send(audioBuffer);
+  }
+
+  // ── GENERATE via ElevenLabs ──
+  console.log(`[speak] cache miss — generating: ${cacheKey}`);
+
+  const apiKey = (process.env.ELEVENLABS_API_KEY || '').trim();
   if (!apiKey) {
-    return res.status(500).json({ error: 'ELEVENLABS_API_KEY environment variable not set' });
+    return res.status(500).json({ error: 'ELEVENLABS_API_KEY not set in Vercel environment variables' });
   }
 
   const voiceId = VOICE_MAP[voiceLabel] || VOICE_MAP['Narrator'];
@@ -50,7 +91,7 @@ module.exports = async function handler(req, res) {
           'Accept': 'audio/mpeg',
         },
         body: JSON.stringify({
-          text,
+          text: text.trim(),
           model_id: ELEVENLABS_MODEL,
           voice_settings: {
             stability: 0.5,
@@ -64,18 +105,34 @@ module.exports = async function handler(req, res) {
 
     if (!upstream.ok) {
       const errText = await upstream.text();
-      console.error('ElevenLabs error:', upstream.status, errText);
+      console.error('[speak] ElevenLabs error:', upstream.status, errText);
       return res.status(upstream.status).json({ error: 'ElevenLabs error ' + upstream.status });
     }
 
-    // Stream raw audio back to browser
-    const buffer = await upstream.arrayBuffer();
+    const buffer = Buffer.from(await upstream.arrayBuffer());
+
+    // Save to cache
+    fs.writeFileSync(mp3Path, buffer);
+
+    // Update manifest
+    manifest.athletes[cacheKey] = {
+      hash: currentHash,
+      generated: new Date().toISOString(),
+      voice: voiceLabel,
+      athlete: athleteName,
+    };
+    fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
+
+    console.log(`[speak] saved: public/audio/${cacheKey}.mp3`);
+
+    // Serve the freshly generated audio
     res.setHeader('Content-Type', 'audio/mpeg');
-    res.setHeader('Cache-Control', 'no-store');
-    return res.status(200).send(Buffer.from(buffer));
+    res.setHeader('Cache-Control', 'public, max-age=31536000');
+    res.setHeader('X-Cache', 'MISS');
+    return res.status(200).send(buffer);
 
   } catch (err) {
-    console.error('speak handler error:', err);
+    console.error('[speak] handler error:', err);
     return res.status(500).json({ error: err.message });
   }
 };
