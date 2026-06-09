@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v2.1 — hero portrait layout, skeleton loader, mobile polish -->
+<!-- v2.2 — intro hero restored, filesystem write fix, in-memory audio cache -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8">
@@ -37,6 +37,21 @@ header{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;justify-cont
 .theme-toggle:hover{color:var(--text);border-color:var(--accent);}
 .merch-btn{background:var(--accent);border:none;border-radius:100px;padding:8px 18px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--bg);cursor:pointer;transition:all 0.2s;}
 .merch-btn:hover{background:var(--accent2);}
+
+
+/* ── INTRO ── */
+.intro-section{padding:100px 32px 32px;max-width:860px;margin:0 auto;text-align:center;}
+.intro-eyebrow{font-family:'DM Mono',monospace;font-size:11px;letter-spacing:0.22em;text-transform:uppercase;color:var(--accent);margin-bottom:24px;}
+.intro-title{font-family:'Playfair Display',serif;font-size:clamp(40px,8vw,80px);line-height:1.05;font-weight:400;letter-spacing:-0.01em;margin-bottom:24px;}
+.intro-title em{font-style:italic;color:var(--accent);}
+.intro-sub{font-size:15px;color:var(--text2);line-height:1.75;max-width:540px;margin:0 auto 24px;}
+.intro-divider{width:1px;height:32px;background:linear-gradient(to bottom,var(--accent),transparent);margin:0 auto 8px;}
+@media(max-width:600px){
+  .intro-section{padding:80px 20px 24px;}
+  .intro-eyebrow{font-size:9px;margin-bottom:16px;}
+  .intro-sub{font-size:14px;}
+  .intro-divider{height:20px;}
+}
 
 /* ── HERO PLAYER ── */
 .hero-section{padding:72px 0 0;}
@@ -257,6 +272,14 @@ footer{border-top:1px solid var(--border);padding:36px 32px;display:flex;justify
     <button class="merch-btn" onclick="openTray()">Prints &amp; Merch</button>
   </div>
 </header>
+
+<!-- INTRO HERO -->
+<section class="intro-section">
+  <div class="intro-eyebrow">A Book &nbsp;·&nbsp; Photo by Ira L. Black &nbsp;·&nbsp; Stories by Dane Howard</div>
+  <h1 class="intro-title">The World at<br><em>Their Feet</em></h1>
+  <p class="intro-sub">Beyond the pitch. Beyond the highlight. These are the stories of where they came from, what drives them, and who they carry with them every time they play.</p>
+  <div class="intro-divider"></div>
+</section>
 
 <!-- HERO PLAYER -->
 <section class="hero-section">

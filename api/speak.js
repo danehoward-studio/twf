@@ -1,29 +1,26 @@
 // api/speak.js
-// First call: generates audio via ElevenLabs, saves MP3 to public/audio/, updates manifest
-// Subsequent calls: serves cached MP3 directly — zero ElevenLabs API calls
+// Streams audio from ElevenLabs.
+// In-memory cache per serverless instance — repeated plays in the same
+// session are instant. Vercel's read-only filesystem means we can't
+// persist MP3s between cold starts, so each new instance fetches once.
 //
-// Cache key: public/audio/{athleteSlug}-{narrator|photographer}.mp3
-
-const fs     = require('fs');
-const path   = require('path');
-const crypto = require('crypto');
-
-// ============================================================
-//  ✦  VOICE MAP — edit voice IDs here
-// ============================================================
+// ✦  VOICE MAP — edit voice IDs here
 const VOICE_MAP = {
   'Narrator':     'Dslrhjl3ZpzrctukrQSN',
   'Photographer': 'N0Ci88MmvOBNWazIX9VN',
+  // Add more voices:
+  // 'Miles':   'VOICE_ID_HERE',
+  // 'Julian':  'VOICE_ID_HERE',
 };
 
 const ELEVENLABS_MODEL = 'eleven_multilingual_v2';
 
-function hash(text) {
-  return crypto.createHash('md5').update(text || '').digest('hex').slice(0, 8);
-}
+// In-memory cache: survives for the lifetime of this serverless instance
+// Key: athleteSlug-voicekey, Value: Buffer
+const memCache = new Map();
 
 function slugify(name) {
-  return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  return (name || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 }
 
 module.exports = async function handler(req, res) {
@@ -39,43 +36,23 @@ module.exports = async function handler(req, res) {
     return res.status(400).json({ error: 'Missing voiceLabel, text, or athleteName' });
   }
 
-  const slug      = slugify(athleteName);
-  const voiceKey  = voiceLabel.toLowerCase(); // 'narrator' or 'photographer'
-  const cacheKey  = `${slug}-${voiceKey}`;
-  const audioDir  = path.join(__dirname, '..', 'public', 'audio');
-  const mp3Path   = path.join(audioDir, `${cacheKey}.mp3`);
-  const manifestPath = path.join(__dirname, '..', 'data', 'cache-manifest.json');
+  const cacheKey = `${slugify(athleteName)}-${voiceLabel.toLowerCase()}`;
 
-  // Ensure audio dir exists
-  if (!fs.existsSync(audioDir)) fs.mkdirSync(audioDir, { recursive: true });
-
-  // Load manifest
-  let manifest = { athletes: {} };
-  try {
-    manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
-    if (!manifest.athletes) manifest.athletes = {};
-  } catch (e) { /* first run, manifest doesn't exist yet */ }
-
-  const currentHash = hash(text);
-  const cached = manifest.athletes[cacheKey];
-  const mp3Exists = fs.existsSync(mp3Path);
-
-  // ── SERVE CACHED MP3 if hash matches and file exists ──
-  if (cached && cached.hash === currentHash && mp3Exists) {
-    console.log(`[speak] cache hit: ${cacheKey}`);
-    const audioBuffer = fs.readFileSync(mp3Path);
+  // ── SERVE FROM IN-MEMORY CACHE ──
+  if (memCache.has(cacheKey)) {
+    console.log(`[speak] mem-cache hit: ${cacheKey}`);
     res.setHeader('Content-Type', 'audio/mpeg');
-    res.setHeader('Cache-Control', 'public, max-age=31536000');
+    res.setHeader('Cache-Control', 'no-store');
     res.setHeader('X-Cache', 'HIT');
-    return res.status(200).send(audioBuffer);
+    return res.status(200).send(memCache.get(cacheKey));
   }
 
   // ── GENERATE via ElevenLabs ──
-  console.log(`[speak] cache miss — generating: ${cacheKey}`);
+  console.log(`[speak] generating: ${cacheKey}`);
 
   const apiKey = (process.env.ELEVENLABS_API_KEY || '').trim();
   if (!apiKey) {
-    return res.status(500).json({ error: 'ELEVENLABS_API_KEY not set in Vercel environment variables' });
+    return res.status(500).json({ error: 'ELEVENLABS_API_KEY not configured in Vercel Environment Variables' });
   }
 
   const voiceId = VOICE_MAP[voiceLabel] || VOICE_MAP['Narrator'];
@@ -106,28 +83,19 @@ module.exports = async function handler(req, res) {
     if (!upstream.ok) {
       const errText = await upstream.text();
       console.error('[speak] ElevenLabs error:', upstream.status, errText);
-      return res.status(upstream.status).json({ error: 'ElevenLabs error ' + upstream.status });
+      return res.status(upstream.status).json({
+        error: `ElevenLabs error ${upstream.status} — check your API key in Vercel Environment Variables`
+      });
     }
 
     const buffer = Buffer.from(await upstream.arrayBuffer());
 
-    // Save to cache
-    fs.writeFileSync(mp3Path, buffer);
+    // Store in memory for this instance's lifetime
+    memCache.set(cacheKey, buffer);
+    console.log(`[speak] cached in memory: ${cacheKey} (${buffer.length} bytes)`);
 
-    // Update manifest
-    manifest.athletes[cacheKey] = {
-      hash: currentHash,
-      generated: new Date().toISOString(),
-      voice: voiceLabel,
-      athlete: athleteName,
-    };
-    fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
-
-    console.log(`[speak] saved: public/audio/${cacheKey}.mp3`);
-
-    // Serve the freshly generated audio
     res.setHeader('Content-Type', 'audio/mpeg');
-    res.setHeader('Cache-Control', 'public, max-age=31536000');
+    res.setHeader('Cache-Control', 'no-store');
     res.setHeader('X-Cache', 'MISS');
     return res.status(200).send(buffer);
 
