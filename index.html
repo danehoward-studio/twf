@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v2.2 — intro hero restored, filesystem write fix, in-memory audio cache -->
+<!-- v2.3 — smooth voice switching, auto-play, no pill guards -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8">
@@ -537,15 +537,19 @@ function selectAthlete(idx) {
 }
 
 // ── SELECT VOICE ──
+// No guards — always interrupts whatever is playing
 function selectVoice(voiceLabel, btn) {
   lastVoiceLabel = voiceLabel;
   document.querySelectorAll('.voice-pill').forEach(p => p.classList.remove('active'));
   btn.classList.add('active');
-  cancelAndReset();
   fetchAndPlay(voiceLabel);
 }
 
-// ── FETCH & PLAY (with caching via /api/speak) ──
+// ── FETCH & PLAY ──
+// Single source of truth for all audio. Calling it always:
+//   1. Cancels any in-flight network request
+//   2. Stops and tears down any existing audio element
+//   3. Fetches new audio and auto-plays when ready
 async function fetchAndPlay(voiceLabel) {
   if (!currentAthlete) return;
 
@@ -558,85 +562,110 @@ async function fetchAndPlay(voiceLabel) {
     return;
   }
 
-  // Abort any in-flight request
-  if (currentAbortCtrl) currentAbortCtrl.abort();
-  currentAbortCtrl = new AbortController();
-  const signal = currentAbortCtrl.signal;
-  const forAthlete = currentAthlete;
+  // 1. Cancel in-flight request
+  if (currentAbortCtrl) { currentAbortCtrl.abort(); currentAbortCtrl = null; }
 
-  setLoadingState(true);
+  // 2. Tear down existing audio immediately so there's no bleed
+  if (audioElement) {
+    audioElement.pause();
+    audioElement.oncanplaythrough = null;
+    audioElement.onerror = null;
+    audioElement.onended = null;
+    audioElement.src = '';
+    audioElement = null;
+  }
+  if (audioObjectURL) { URL.revokeObjectURL(audioObjectURL); audioObjectURL = null; }
+  clearInterval(progressInterval);
+
+  // Reset UI to loading state
+  document.getElementById('playBtn').classList.remove('playing');
+  document.getElementById('progressFill').style.width = '0%';
+  document.getElementById('pbTime').textContent = '0:00';
+  document.getElementById('pbTitle').textContent = currentAthlete.name + ' — ' + voiceLabel;
   setStatus('LOADING', true);
-  document.getElementById('pbTitle').textContent = forAthlete.name + ' — ' + voiceLabel;
+
+  // Voice pills stay enabled — user can switch any time
+  document.querySelectorAll('.voice-pill').forEach(p => { p.style.opacity = '1'; p.disabled = false; });
+  // Dim play button only while fetching
+  document.getElementById('playBtn').style.opacity = '0.4';
+
+  // Snapshot athlete in case user switches while fetch is in flight
+  const forAthlete = currentAthlete;
+  const forVoice   = voiceLabel;
+
+  currentAbortCtrl = new AbortController();
 
   try {
     const res = await fetch(API_SPEAK, {
       method: 'POST',
-      headers: { 'Content-Type':'application/json' },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ voiceLabel, text, athleteName: forAthlete.name }),
-      signal
+      signal: currentAbortCtrl.signal
     });
 
-    if (currentAthlete !== forAthlete) return; // athlete changed while loading
+    // Stale response — user switched athlete while loading
+    if (currentAthlete !== forAthlete) return;
+
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
       throw new Error(err.error || 'Server error ' + res.status);
     }
 
     const blob = await res.blob();
-    if (currentAthlete !== forAthlete) return;
+    if (currentAthlete !== forAthlete) return; // check again after blob
 
-    // Clean up old audio
-    if (audioElement) { audioElement.pause(); audioElement.src = ''; audioElement = null; }
-    if (audioObjectURL) { URL.revokeObjectURL(audioObjectURL); audioObjectURL = null; }
-    clearInterval(progressInterval);
-
+    // Build audio element
     audioObjectURL = URL.createObjectURL(blob);
-    audioElement = new Audio(audioObjectURL);
+    audioElement   = new Audio(audioObjectURL);
     audioElement.playbackRate = playbackSpeed;
 
-    audioElement.addEventListener('canplaythrough', () => {
-      if (currentAthlete !== forAthlete) return;
-      const cached = res.headers.get('X-Cache') === 'HIT';
-      setStatus('Voice: ' + voiceLabel + ' · ElevenLabs TTS' + (cached ? ' · cached' : ''), false);
-      setLoadingState(false);
+    // Auto-play as soon as browser has enough data
+    audioElement.oncanplaythrough = () => {
+      if (currentAthlete !== forAthlete || !audioElement) return;
+      const hit = res.headers.get('X-Cache') === 'HIT';
+      setStatus('Voice: ' + forVoice + ' · ElevenLabs' + (hit ? ' · cached' : ''), false);
+      document.getElementById('playBtn').style.opacity = '1';
       startProgressTracking();
-      audioElement.play().catch(e => console.warn('play():', e));
+      audioElement.play().catch(err => {
+        // Autoplay blocked — show play button, user taps to start
+        console.warn('autoplay blocked:', err);
+        setStatus('Tap ▶ to play · ' + forVoice, false);
+      });
       document.getElementById('playBtn').classList.add('playing');
-    }, { once: true });
+      audioElement.oncanplaythrough = null; // fire once only
+    };
 
-    audioElement.addEventListener('ended', () => {
+    audioElement.onended = () => {
       document.getElementById('playBtn').classList.remove('playing');
       clearInterval(progressInterval);
       document.getElementById('progressFill').style.width = '100%';
-    });
+    };
 
-    audioElement.addEventListener('error', () => {
-      setLoadingState(false);
-      setStatus('⚠ Playback error — try again', false);
-    });
+    audioElement.onerror = () => {
+      document.getElementById('playBtn').style.opacity = '1';
+      setStatus('⚠ Playback error — tap to retry', false);
+    };
 
     audioElement.load();
 
   } catch(e) {
-    if (e.name === 'AbortError') return;
-    console.error('fetchAndPlay:', e);
-    setLoadingState(false);
+    if (e.name === 'AbortError') return; // clean cancel, not an error
+    console.error('fetchAndPlay error:', e);
+    document.getElementById('playBtn').style.opacity = '1';
     setStatus('⚠ ' + e.message, false);
   }
 }
 
 // ── PLAYBACK CONTROLS ──
 function togglePlay() {
-  if (isLoading) return;
   if (!audioElement) {
-    if (currentAthlete) {
-      const firstPill = document.querySelector('.voice-pill');
-      if (firstPill) firstPill.click();
-    }
+    // No audio yet — trigger the active pill
+    const activePill = document.querySelector('.voice-pill.active') || document.querySelector('.voice-pill');
+    if (activePill) activePill.click();
     return;
   }
   if (audioElement.paused) {
-    audioElement.play();
+    audioElement.play().catch(() => {});
     document.getElementById('playBtn').classList.add('playing');
     startProgressTracking();
   } else {
@@ -661,7 +690,7 @@ function scrubProgress(e) {
   const rect = e.currentTarget.getBoundingClientRect();
   const frac = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
   audioElement.currentTime = frac * audioElement.duration;
-  document.getElementById('progressFill').style.width = (frac*100) + '%';
+  document.getElementById('progressFill').style.width = (frac * 100) + '%';
   document.getElementById('pbTime').textContent = formatTime(Math.floor(audioElement.currentTime));
 }
 
@@ -673,11 +702,19 @@ function setSpeed(s, btn) {
 }
 
 function stopAndReset() {
-  if (audioElement) { audioElement.pause(); audioElement.src = ''; audioElement = null; }
+  if (audioElement) {
+    audioElement.pause();
+    audioElement.oncanplaythrough = null;
+    audioElement.onerror = null;
+    audioElement.onended = null;
+    audioElement.src = '';
+    audioElement = null;
+  }
   if (audioObjectURL) { URL.revokeObjectURL(audioObjectURL); audioObjectURL = null; }
   clearInterval(progressInterval);
   isLoading = false;
   document.getElementById('playBtn').classList.remove('playing');
+  document.getElementById('playBtn').style.opacity = '1';
   document.getElementById('playBtn').style.opacity = '1';
   document.getElementById('progressFill').style.width = '0%';
   document.getElementById('pbTime').textContent = '0:00';
