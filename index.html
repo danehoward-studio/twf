@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v2.3 — smooth voice switching, auto-play, no pill guards -->
+<!-- v2.4 — mobile-first single column, no fixed header, tight playback bar, loading ring -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8">
@@ -17,6 +17,7 @@
   --accent:#c8a96e;--accent2:#e8c98e;
   --pill-bg:rgba(255,255,255,0.07);--pill-active:rgba(200,169,110,0.2);
   --radius:8px;
+  --gutter:16px;
 }
 [data-theme="light"]{
   --bg:#f5f2ec;--bg2:#ede9e1;--bg3:#e4dfd6;--surface:#ffffff;
@@ -27,105 +28,98 @@
 }
 *{margin:0;padding:0;box-sizing:border-box;}
 html{scroll-behavior:smooth;}
-body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-weight:300;min-height:100vh;transition:background 0.4s,color 0.4s;overflow-x:hidden;}
-
-/* ── HEADER ── */
-header{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;justify-content:space-between;align-items:center;padding:18px 32px;background:var(--bg);border-bottom:1px solid var(--border);backdrop-filter:blur(12px);}
-.header-title{font-family:'DM Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--text2);}
-.header-right{display:flex;align-items:center;gap:16px;}
-.theme-toggle{background:var(--pill-bg);border:1px solid var(--border);border-radius:100px;padding:6px 14px;font-family:'DM Mono',monospace;font-size:10px;color:var(--text2);cursor:pointer;transition:all 0.2s;}
-.theme-toggle:hover{color:var(--text);border-color:var(--accent);}
-.merch-btn{background:var(--accent);border:none;border-radius:100px;padding:8px 18px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--bg);cursor:pointer;transition:all 0.2s;}
-.merch-btn:hover{background:var(--accent2);}
-
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-weight:300;min-height:100vh;overflow-x:hidden;max-width:600px;margin:0 auto;}
 
 /* ── INTRO ── */
-.intro-section{padding:100px 32px 32px;max-width:860px;margin:0 auto;text-align:center;}
-.intro-eyebrow{font-family:'DM Mono',monospace;font-size:11px;letter-spacing:0.22em;text-transform:uppercase;color:var(--accent);margin-bottom:24px;}
-.intro-title{font-family:'Playfair Display',serif;font-size:clamp(40px,8vw,80px);line-height:1.05;font-weight:400;letter-spacing:-0.01em;margin-bottom:24px;}
+.intro-section{padding:40px var(--gutter) 28px;text-align:center;}
+.intro-eyebrow{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.2em;text-transform:uppercase;color:var(--accent);margin-bottom:18px;}
+.intro-title{font-family:'Playfair Display',serif;font-size:clamp(36px,10vw,64px);line-height:1.05;font-weight:400;letter-spacing:-0.01em;margin-bottom:18px;}
 .intro-title em{font-style:italic;color:var(--accent);}
-.intro-sub{font-size:15px;color:var(--text2);line-height:1.75;max-width:540px;margin:0 auto 24px;}
-.intro-divider{width:1px;height:32px;background:linear-gradient(to bottom,var(--accent),transparent);margin:0 auto 8px;}
-@media(max-width:600px){
-  .intro-section{padding:80px 20px 24px;}
-  .intro-eyebrow{font-size:9px;margin-bottom:16px;}
-  .intro-sub{font-size:14px;}
-  .intro-divider{height:20px;}
-}
+.intro-sub{font-size:14px;color:var(--text2);line-height:1.75;margin:0 auto 20px;}
+.intro-divider{width:1px;height:24px;background:linear-gradient(to bottom,var(--accent),transparent);margin:0 auto 4px;}
 
 /* ── HERO PLAYER ── */
-.hero-section{padding:72px 0 0;}
+.hero-section{padding:0;}
 
-.player-wrap{display:grid;grid-template-columns:400px 1fr;min-height:520px;background:var(--bg2);border-bottom:1px solid var(--border);}
-@media(max-width:800px){.player-wrap{grid-template-columns:1fr;min-height:auto;}}
+/* Single column always — portrait on top, info below */
+.player-wrap{display:flex;flex-direction:column;background:var(--bg2);border-bottom:1px solid var(--border);}
 
-.player-portrait-wrap{position:relative;overflow:hidden;background:#0d0d0d;}
-.player-portrait{width:100%;height:100%;min-height:400px;object-fit:cover;object-position:top center;filter:grayscale(60%);display:block;transition:filter 0.6s;}
-.player-portrait-wrap:hover .player-portrait{filter:grayscale(20%);}
-.player-portrait-placeholder{width:100%;height:100%;min-height:360px;background:linear-gradient(160deg,#1a1510,#0d0d0d);display:flex;align-items:center;justify-content:center;}
-.portrait-fade{position:absolute;inset:0;background:linear-gradient(to right,transparent 55%,var(--bg2));pointer-events:none;}
-@media(max-width:800px){
-  .player-portrait{min-height:0;height:52vw;max-height:260px;}
-  .player-portrait-placeholder{min-height:0;height:52vw;max-height:260px;}
-  .portrait-fade{background:linear-gradient(to bottom,transparent 55%,var(--bg2));}
-}
+.player-portrait-wrap{position:relative;overflow:hidden;background:#0d0d0d;width:100%;}
+.player-portrait{width:100%;height:70vw;max-height:340px;object-fit:cover;object-position:top center;filter:grayscale(60%);display:block;transition:filter 0.6s;}
+.player-portrait-placeholder{width:100%;height:60vw;max-height:280px;background:linear-gradient(160deg,#1a1510,#0d0d0d);display:flex;align-items:center;justify-content:center;}
+.portrait-fade{position:absolute;inset:0;background:linear-gradient(to bottom,transparent 55%,var(--bg2));pointer-events:none;}
 
-.player-info{padding:40px 40px 32px;display:flex;flex-direction:column;}
-@media(max-width:800px){.player-info{padding:24px 20px 28px;}}
+.player-info{padding:20px var(--gutter) 24px;display:flex;flex-direction:column;}
 
-.player-eyebrow{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.2em;color:var(--accent);margin-bottom:8px;text-transform:uppercase;}
-.player-name{font-family:'Playfair Display',serif;font-size:clamp(26px,4vw,40px);font-weight:400;line-height:1.1;margin-bottom:6px;}
-.player-origin{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.14em;color:var(--text2);margin-bottom:18px;text-transform:uppercase;}
-.player-bio{font-size:13.5px;line-height:1.8;color:var(--text2);flex:1;margin-bottom:24px;max-height:120px;overflow:hidden;mask-image:linear-gradient(to bottom,black 70%,transparent 100%);}
-@media(max-width:800px){.player-bio{max-height:80px;font-size:13px;margin-bottom:18px;}}
+.player-eyebrow{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.2em;color:var(--accent);margin-bottom:6px;text-transform:uppercase;}
+.player-name{font-family:'Playfair Display',serif;font-size:clamp(24px,7vw,34px);font-weight:400;line-height:1.1;margin-bottom:4px;}
+.player-origin{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.14em;color:var(--text2);margin-bottom:14px;text-transform:uppercase;}
+.player-bio{font-size:13px;line-height:1.75;color:var(--text2);margin-bottom:18px;max-height:72px;overflow:hidden;mask-image:linear-gradient(to bottom,black 60%,transparent 100%);}
 
 /* ── VOICE PILLS ── */
-.voice-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;}
-.voice-pill{background:var(--pill-bg);border:1px solid var(--border);border-radius:100px;padding:7px 18px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.12em;color:var(--text2);cursor:pointer;transition:all 0.2s;white-space:nowrap;}
-.voice-pill:hover{color:var(--text);border-color:var(--accent);}
+.voice-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;}
+.voice-pill{background:var(--pill-bg);border:1px solid var(--border);border-radius:100px;padding:7px 16px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.1em;color:var(--text2);cursor:pointer;transition:all 0.2s;white-space:nowrap;-webkit-tap-highlight-color:transparent;}
+.voice-pill:active{transform:scale(0.96);}
 .voice-pill.active{background:var(--pill-active);border-color:var(--accent);color:var(--accent);}
-.voice-pill:disabled{opacity:0.4;cursor:not-allowed;}
 
 /* ── PLAYBACK BAR ── */
-.playback-bar{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:14px 18px;}
-.pb-top{display:flex;align-items:center;gap:14px;margin-bottom:12px;}
-.pb-play-btn{width:44px;height:44px;border-radius:50%;background:var(--accent);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.2s;}
-.pb-play-btn:hover{background:var(--accent2);transform:scale(1.05);}
-.pb-play-btn svg{width:14px;fill:var(--bg);margin-left:2px;}
+.playback-bar{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;}
+.pb-top{display:flex;align-items:center;gap:12px;margin-bottom:10px;}
+.pb-play-btn{
+  width:42px;height:42px;border-radius:50%;
+  background:var(--accent);border:none;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;transition:background 0.2s,transform 0.15s;
+  -webkit-tap-highlight-color:transparent;
+}
+.pb-play-btn:active{transform:scale(0.93);}
+/* Loading ring animation */
+.pb-play-btn.loading{background:transparent;border:2px solid var(--accent);}
+.pb-play-btn.loading::after{content:'';position:absolute;width:42px;height:42px;border-radius:50%;border:2px solid transparent;border-top-color:var(--accent);animation:spin 0.8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+/* Icon visibility — three states: idle(play), playing(pause), loading(spinner) */
+.pb-play-btn svg{width:14px;fill:var(--bg);margin-left:2px;position:relative;}
 .pb-play-btn.playing svg.play-icon{display:none;}
-.pb-play-btn:not(.playing) svg.pause-icon{display:none;}
+.pb-play-btn:not(.playing):not(.loading) svg.pause-icon{display:none;}
+.pb-play-btn.loading svg{display:none;}
+
 .pb-info{flex:1;min-width:0;}
-.pb-title{font-size:13px;font-weight:500;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.pb-status{font-family:'DM Mono',monospace;font-size:10px;color:var(--text3);letter-spacing:0.1em;}
+.pb-title{font-size:12px;font-weight:500;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.pb-status{font-family:'DM Mono',monospace;font-size:9px;color:var(--text3);letter-spacing:0.08em;}
 .pb-status.loading{color:var(--accent);animation:pulse 1.2s ease-in-out infinite;}
 @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.4;}}
-.pb-time{font-family:'DM Mono',monospace;font-size:11px;color:var(--text3);flex-shrink:0;}
+.pb-time{font-family:'DM Mono',monospace;font-size:10px;color:var(--text3);flex-shrink:0;}
+
 .progress-track{height:3px;background:var(--border);border-radius:3px;cursor:pointer;position:relative;}
 .progress-fill{height:100%;background:var(--accent);border-radius:3px;width:0%;transition:width 0.15s linear;position:relative;}
 .progress-fill::after{content:'';position:absolute;right:-5px;top:-4px;width:11px;height:11px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 3px var(--bg3);}
-.pb-speed{margin-top:10px;display:flex;gap:6px;align-items:center;}
-.speed-label{font-family:'DM Mono',monospace;font-size:9px;color:var(--text3);letter-spacing:0.1em;}
-.speed-btn{font-family:'DM Mono',monospace;font-size:9px;color:var(--text3);background:none;border:1px solid var(--border);border-radius:100px;padding:3px 10px;cursor:pointer;transition:all 0.15s;}
+
+.pb-speed{margin-top:8px;display:flex;gap:4px;align-items:center;}
+.speed-label{font-family:'DM Mono',monospace;font-size:9px;color:var(--text3);letter-spacing:0.08em;}
+.speed-btn{font-family:'DM Mono',monospace;font-size:9px;color:var(--text3);background:none;border:1px solid var(--border);border-radius:100px;padding:3px 9px;cursor:pointer;transition:all 0.15s;-webkit-tap-highlight-color:transparent;}
 .speed-btn.active,.speed-btn:hover{color:var(--accent);border-color:var(--accent);}
 
 /* ── GALLERY SECTION ── */
-.gallery-section{padding:40px 0 100px;}
-.section-label{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.22em;text-transform:uppercase;color:var(--text3);margin-bottom:28px;padding:0 32px;text-align:center;}
+.gallery-section{padding:28px 0 80px;}
+.gallery-top-row{display:flex;justify-content:space-between;align-items:center;padding:0 var(--gutter);margin-bottom:20px;}
+.section-label{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.2em;text-transform:uppercase;color:var(--text3);}
+.merch-btn-inline{background:var(--accent);border:none;border-radius:100px;padding:7px 14px;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--bg);cursor:pointer;-webkit-tap-highlight-color:transparent;}
 
-.gallery-scroll{display:flex;gap:14px;overflow-x:auto;padding:0 32px 16px;scrollbar-width:none;-ms-overflow-style:none;scroll-snap-type:x mandatory;}
+.gallery-scroll{display:flex;gap:10px;overflow-x:auto;padding:0 var(--gutter) 12px;scrollbar-width:none;-ms-overflow-style:none;scroll-snap-type:x mandatory;}
 .gallery-scroll::-webkit-scrollbar{display:none;}
 
-.athlete-card{flex:0 0 220px;scroll-snap-align:start;cursor:pointer;position:relative;border-radius:6px;overflow:hidden;background:var(--surface);border:1px solid var(--border);transition:transform 0.3s,border-color 0.3s;}
-.athlete-card:hover{transform:translateY(-3px);border-color:var(--accent);}
+/* Cards: show 2.3 at once on mobile */
+.athlete-card{flex:0 0 42vw;max-width:180px;scroll-snap-align:start;cursor:pointer;position:relative;border-radius:6px;overflow:hidden;background:var(--surface);border:1px solid var(--border);transition:border-color 0.25s;-webkit-tap-highlight-color:transparent;}
+.athlete-card:active{opacity:0.85;}
 .athlete-card.active{border-color:var(--accent);}
 .card-img{width:100%;aspect-ratio:3/4;object-fit:cover;display:block;filter:grayscale(100%);transition:filter 0.4s;}
-.athlete-card:hover .card-img,.athlete-card.active .card-img{filter:grayscale(20%);}
+.athlete-card.active .card-img{filter:grayscale(20%);}
 .card-placeholder{width:100%;aspect-ratio:3/4;background:linear-gradient(160deg,#1a1510,#0d0d0d);display:flex;align-items:center;justify-content:center;}
-.card-overlay{position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,0.9) 0%,transparent 45%);pointer-events:none;}
-.card-info{position:absolute;bottom:0;left:0;right:0;padding:16px 14px 14px;}
-.card-name{font-family:'Playfair Display',serif;font-size:16px;font-weight:400;color:#fff;line-height:1.2;margin-bottom:3px;}
-.card-tag{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent);}
-.card-now-playing{position:absolute;top:10px;left:10px;background:var(--accent);border-radius:100px;padding:3px 10px;font-family:'DM Mono',monospace;font-size:8px;letter-spacing:0.1em;color:#000;display:none;}
+.card-overlay{position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,0.9) 0%,transparent 50%);pointer-events:none;}
+.card-info{position:absolute;bottom:0;left:0;right:0;padding:12px 10px 10px;}
+.card-name{font-family:'Playfair Display',serif;font-size:14px;font-weight:400;color:#fff;line-height:1.2;margin-bottom:2px;}
+.card-tag{font-family:'DM Mono',monospace;font-size:7px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);}
+.card-now-playing{position:absolute;top:8px;left:8px;background:var(--accent);border-radius:100px;padding:3px 8px;font-family:'DM Mono',monospace;font-size:7px;letter-spacing:0.1em;color:#000;display:none;}
 .athlete-card.active .card-now-playing{display:block;}
 
 /* ── MOBILE LIST BUTTON ── */
@@ -265,13 +259,7 @@ footer{border-top:1px solid var(--border);padding:36px 32px;display:flex;justify
 </head>
 <body>
 
-<header>
-  <div class="header-title">The World at Their Feet &nbsp;/&nbsp; Photo by Ira L. Black</div>
-  <div class="header-right">
-    <button class="theme-toggle" onclick="toggleTheme()">☽ / ☀</button>
-    <button class="merch-btn" onclick="openTray()">Prints &amp; Merch</button>
-  </div>
-</header>
+<!-- Merch button now lives inline above gallery, header removed for embed -->
 
 <!-- INTRO HERO -->
 <section class="intro-section">
@@ -323,7 +311,10 @@ footer{border-top:1px solid var(--border);padding:36px 32px;display:flex;justify
 
 <!-- GALLERY -->
 <section class="gallery-section">
-  <div class="section-label">— Athletes</div>
+  <div class="gallery-top-row">
+    <div class="section-label" style="margin-bottom:0;padding:0;">— Athletes</div>
+    <button class="merch-btn-inline" onclick="openTray()">Prints &amp; Merch</button>
+  </div>
   <div class="gallery-scroll" id="galleryScroll">
     <div style="padding:0 32px;color:var(--text3);font-family:'DM Mono',monospace;font-size:11px;">Loading...</div>
   </div>
@@ -408,6 +399,21 @@ let playbackSpeed      = 1;
 let isLoading          = false;
 let lastVoiceLabel     = 'Narrator';
 let currentAbortCtrl   = null;
+
+// ── PLAY BUTTON STATE ──
+// States: 'idle' (stopped, ready) | 'loading' | 'playing' | 'paused'
+function setPlayState(state) {
+  const btn = document.getElementById('playBtn');
+  btn.classList.remove('playing', 'loading');
+  btn.style.opacity = '1';
+  if (state === 'loading') {
+    btn.classList.add('loading');
+    btn.style.opacity = '1';
+  } else if (state === 'playing') {
+    btn.classList.add('playing');
+  }
+  // 'idle' and 'paused' — just shows play icon, full opacity
+}
 
 // ── INIT ──
 async function loadAthletes() {
@@ -578,16 +584,14 @@ async function fetchAndPlay(voiceLabel) {
   clearInterval(progressInterval);
 
   // Reset UI to loading state
-  document.getElementById('playBtn').classList.remove('playing');
+  setPlayState('loading');
   document.getElementById('progressFill').style.width = '0%';
   document.getElementById('pbTime').textContent = '0:00';
   document.getElementById('pbTitle').textContent = currentAthlete.name + ' — ' + voiceLabel;
   setStatus('LOADING', true);
 
-  // Voice pills stay enabled — user can switch any time
+  // Voice pills always enabled — user can switch any time
   document.querySelectorAll('.voice-pill').forEach(p => { p.style.opacity = '1'; p.disabled = false; });
-  // Dim play button only while fetching
-  document.getElementById('playBtn').style.opacity = '0.4';
 
   // Snapshot athlete in case user switches while fetch is in flight
   const forAthlete = currentAthlete;
@@ -624,25 +628,26 @@ async function fetchAndPlay(voiceLabel) {
       if (currentAthlete !== forAthlete || !audioElement) return;
       const hit = res.headers.get('X-Cache') === 'HIT';
       setStatus('Voice: ' + forVoice + ' · ElevenLabs' + (hit ? ' · cached' : ''), false);
-      document.getElementById('playBtn').style.opacity = '1';
       startProgressTracking();
-      audioElement.play().catch(err => {
-        // Autoplay blocked — show play button, user taps to start
+      audioElement.play().then(() => {
+        setPlayState('playing');
+      }).catch(err => {
+        // Autoplay blocked — show idle play button so user can tap
         console.warn('autoplay blocked:', err);
+        setPlayState('idle');
         setStatus('Tap ▶ to play · ' + forVoice, false);
       });
-      document.getElementById('playBtn').classList.add('playing');
       audioElement.oncanplaythrough = null; // fire once only
     };
 
     audioElement.onended = () => {
-      document.getElementById('playBtn').classList.remove('playing');
+      setPlayState('idle');
       clearInterval(progressInterval);
       document.getElementById('progressFill').style.width = '100%';
     };
 
     audioElement.onerror = () => {
-      document.getElementById('playBtn').style.opacity = '1';
+      setPlayState('idle');
       setStatus('⚠ Playback error — tap to retry', false);
     };
 
@@ -651,7 +656,7 @@ async function fetchAndPlay(voiceLabel) {
   } catch(e) {
     if (e.name === 'AbortError') return; // clean cancel, not an error
     console.error('fetchAndPlay error:', e);
-    document.getElementById('playBtn').style.opacity = '1';
+    setPlayState('idle');
     setStatus('⚠ ' + e.message, false);
   }
 }
@@ -666,11 +671,11 @@ function togglePlay() {
   }
   if (audioElement.paused) {
     audioElement.play().catch(() => {});
-    document.getElementById('playBtn').classList.add('playing');
+    setPlayState('playing');
     startProgressTracking();
   } else {
     audioElement.pause();
-    document.getElementById('playBtn').classList.remove('playing');
+    setPlayState('paused');
     clearInterval(progressInterval);
   }
 }
@@ -713,8 +718,7 @@ function stopAndReset() {
   if (audioObjectURL) { URL.revokeObjectURL(audioObjectURL); audioObjectURL = null; }
   clearInterval(progressInterval);
   isLoading = false;
-  document.getElementById('playBtn').classList.remove('playing');
-  document.getElementById('playBtn').style.opacity = '1';
+  setPlayState('idle');
   document.getElementById('playBtn').style.opacity = '1';
   document.getElementById('progressFill').style.width = '0%';
   document.getElementById('pbTime').textContent = '0:00';
