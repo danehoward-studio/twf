@@ -1,6 +1,6 @@
 {
   "name": "world-at-their-feet",
-  "version": "1.0.0",
+  "version": "2.1.0",
   "description": "The World at Their Feet — Threadline Ventures",
   "engines": { "node": "18.x" },
   "scripts": {

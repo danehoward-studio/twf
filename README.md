@@ -1,4 +1,4 @@
-# The World at Their Feet
+# The World at Their Feet — v2.1
 Photography by Ira L. Black · Art Direction by Dane Howard Studio
 
 ---
