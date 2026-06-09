@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v2.5 — merch external link, theme toggle restored, desktop side-by-side, page-wrap -->
+<!-- v2.6 — playback bar always below portrait, full-width on mobile and desktop -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8">
@@ -51,29 +51,65 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;fon
 .hero-section{padding:0;}
 
 /* Single column always — portrait on top, info below */
-.player-wrap{display:flex;flex-direction:column;background:var(--bg2);border-bottom:1px solid var(--border);}
+/* ── PLAYER — always stacked, portrait full width ── */
+.player-wrap{
+  display:flex;
+  flex-direction:column;
+  background:var(--bg2);
+  border-bottom:1px solid var(--border);
+}
+
+/* Portrait — full width, fixed aspect */
+.player-portrait-wrap{position:relative;overflow:hidden;background:#0d0d0d;width:100%;}
+.player-portrait{
+  width:100%;height:72vw;max-height:420px;
+  object-fit:cover;object-position:top center;
+  filter:grayscale(60%);display:block;transition:filter 0.6s;
+}
+.player-portrait-placeholder{
+  width:100%;height:60vw;max-height:360px;
+  background:linear-gradient(160deg,#1a1510,#0d0d0d);
+  display:flex;align-items:center;justify-content:center;
+}
+.portrait-fade{
+  position:absolute;inset:0;
+  background:linear-gradient(to bottom,transparent 60%,var(--bg2));
+  pointer-events:none;
+}
+
+/* Meta row: name/bio stacked on mobile, side-by-side on desktop */
+.player-meta{
+  display:flex;
+  flex-direction:column;
+  padding:18px var(--gutter) 14px;
+  gap:14px;
+}
 @media(min-width:600px){
-  .player-wrap{flex-direction:row;min-height:400px;}
-  .player-portrait-wrap{width:280px;flex-shrink:0;}
-  .player-portrait{height:100%;max-height:none;}
-  .portrait-fade{background:linear-gradient(to right,transparent 55%,var(--bg2));}
-  .player-bio{max-height:100px;}
+  .player-portrait{height:50vw;max-height:380px;}
+  .player-portrait-placeholder{height:44vw;max-height:320px;}
+  .player-meta{
+    flex-direction:row;
+    align-items:flex-start;
+    justify-content:space-between;
+    padding:20px 24px 14px;
+    gap:20px;
+  }
+  .player-meta-left{flex:1;}
+  .voice-row{flex-direction:column;align-items:flex-end;gap:8px;margin-bottom:0;flex-shrink:0;}
   .gallery-scroll{padding:0 24px 12px;}
   .athlete-card{flex:0 0 180px;max-width:180px;}
   .gallery-top-row{padding:0 24px;}
 }
 
-.player-portrait-wrap{position:relative;overflow:hidden;background:#0d0d0d;width:100%;}
-.player-portrait{width:100%;height:70vw;max-height:340px;object-fit:cover;object-position:top center;filter:grayscale(60%);display:block;transition:filter 0.6s;}
-.player-portrait-placeholder{width:100%;height:60vw;max-height:280px;background:linear-gradient(160deg,#1a1510,#0d0d0d);display:flex;align-items:center;justify-content:center;}
-.portrait-fade{position:absolute;inset:0;background:linear-gradient(to bottom,transparent 55%,var(--bg2));pointer-events:none;}
-
-.player-info{padding:20px var(--gutter) 24px;display:flex;flex-direction:column;}
-
+.player-meta-left{flex:1;}
 .player-eyebrow{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.2em;color:var(--accent);margin-bottom:6px;text-transform:uppercase;}
-.player-name{font-family:'Playfair Display',serif;font-size:clamp(24px,7vw,34px);font-weight:400;line-height:1.1;margin-bottom:4px;}
-.player-origin{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.14em;color:var(--text2);margin-bottom:14px;text-transform:uppercase;}
-.player-bio{font-size:13px;line-height:1.75;color:var(--text2);margin-bottom:18px;max-height:72px;overflow:hidden;mask-image:linear-gradient(to bottom,black 60%,transparent 100%);}
+.player-name{font-family:'Playfair Display',serif;font-size:clamp(22px,6vw,32px);font-weight:400;line-height:1.1;margin-bottom:4px;}
+.player-origin{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.14em;color:var(--text2);margin-bottom:10px;text-transform:uppercase;}
+.player-bio{font-size:13px;line-height:1.75;color:var(--text2);margin-bottom:0;max-height:80px;overflow:hidden;mask-image:linear-gradient(to bottom,black 65%,transparent 100%);}
+
+/* Playback bar — always full width below meta */
+.player-playback{padding:0 var(--gutter) 20px;}
+@media(min-width:600px){.player-playback{padding:0 24px 24px;}}
 
 /* ── VOICE PILLS ── */
 .voice-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;}
@@ -289,16 +325,26 @@ footer{padding:28px 20px;display:flex;justify-content:space-between;align-items:
 <!-- HERO PLAYER -->
 <section class="hero-section">
   <div class="player-wrap">
+
+    <!-- Portrait — full width on both mobile and desktop -->
     <div class="player-portrait-wrap">
       <div id="playerPortrait" class="player-portrait-placeholder skeleton skeleton-portrait"></div>
       <div class="portrait-fade"></div>
     </div>
-    <div class="player-info">
-      <div class="player-eyebrow" id="playerNumber">— 01</div>
-      <div class="player-name" id="playerName"><span class="skeleton skeleton-line wide" style="display:inline-block;width:60%;height:36px;"> </span></div>
-      <div class="player-origin" id="playerOrigin"></div>
-      <p class="player-bio" id="playerBio"></p>
+
+    <!-- Meta row: name/bio left, voice pills right on desktop -->
+    <div class="player-meta">
+      <div class="player-meta-left">
+        <div class="player-eyebrow" id="playerNumber">— 01</div>
+        <div class="player-name" id="playerName"><span class="skeleton skeleton-line wide" style="display:inline-block;width:60%;height:32px;"> </span></div>
+        <div class="player-origin" id="playerOrigin"></div>
+        <p class="player-bio" id="playerBio"></p>
+      </div>
       <div class="voice-row" id="voiceRow"></div>
+    </div>
+
+    <!-- Playback bar — always full width below portrait -->
+    <div class="player-playback">
       <div class="playback-bar">
         <div class="pb-top">
           <button class="pb-play-btn" id="playBtn" onclick="togglePlay()">
@@ -323,6 +369,7 @@ footer{padding:28px 20px;display:flex;justify-content:space-between;align-items:
         </div>
       </div>
     </div>
+
   </div>
 </section>
 
@@ -360,7 +407,7 @@ footer{padding:28px 20px;display:flex;justify-content:space-between;align-items:
 </div><!-- /page-wrap -->
 <footer>
   <div class="footer-brand">The World at Their Feet</div>
-  <div class="footer-meta">Photography by Ira L. Black<br>Art Direction · Dane Howard Studio<br><span style="opacity:0.4;font-size:9px;">v2.5</span></div>
+  <div class="footer-meta">Photography by Ira L. Black<br>Art Direction · Dane Howard Studio<br><span style="opacity:0.4;font-size:9px;">v2.6</span></div>
 </footer>
 
 <script>
