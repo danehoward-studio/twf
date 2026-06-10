@@ -1,9 +1,12 @@
 {
   "name": "world-at-their-feet",
-  "version": "2.7.0",
+  "version": "2.7.2",
   "description": "The World at Their Feet — Threadline Ventures",
   "engines": { "node": "24.x" },
   "scripts": {
+    "generate": "node scripts/generate-audio.js",
+    "generate:force": "node scripts/generate-audio.js --force",
+    "generate:dry": "node scripts/generate-audio.js --dry-run",
     "check-cache": "node scripts/check-cache.js"
   },
   "dependencies": {
